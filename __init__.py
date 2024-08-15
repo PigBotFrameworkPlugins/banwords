@@ -1,11 +1,16 @@
-import requests
 from base64 import b64encode
 
-from pbf.utils import MetaData
+from pbf.utils import MetaData, Utils
 from pbf.setup import logger
-from pbf.utils.Register import Message
+from pbf.utils.Register import Message, Command
 from pbf.controller.Data import Event
 from pbf.controller.Client import Msg
+
+
+try:
+    import requests
+except ImportError:
+    Utils.installPackage("requests")
 
 
 banwords_enable_message_handler = True
@@ -45,8 +50,11 @@ class Api:
 
 @Message(name="banwords message handler", enabled=banwords_enable_message_handler)
 def messageHandler(event: Event):
-    logger.info(f"Checking banwords inside the message...")
-    logger.debug(Api.check(event.raw_message))
+    logger.info("Checking banwords inside the message...")
     if Api.check(event.raw_message).get("result"):
-        logger.info("Message contains banwords")
-        # do something
+        logger.info("Message container banwords")
+
+@Command(name="违禁词检测 ", usage="违禁词检测 <内容>", description="检查消息中是否包含违禁词")
+def banwordsCheck(event: Event):
+    if Api.check(event.raw_message).get("result"):
+        Msg("消息中包含违禁词", event=event).send()
