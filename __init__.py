@@ -5,7 +5,8 @@ from pbf.setup import logger
 from pbf.utils.Register import Message, Command
 from pbf.controller.Data import Event
 from pbf.controller.Client import Msg
-
+from pbf.utils.Config import Config
+from pbf.config import plugins_config
 
 try:
     import requests
@@ -13,13 +14,18 @@ except ImportError:
     Utils.installPackage("requests")
 
 
-banwords_enable_message_handler = True
-banwords_server = "https://banwords.xzynb.top"
-banwords_user = "root"
-banwords_key = "banwords"
+class BanwordsConfig(Config):
+    originData = {
+        "enable_message_handler": True,
+        "server": "https://banwords.xzynb.top",
+        "user": "root",
+        "key": "banwords"
+    }
+config = BanwordsConfig(plugins_config.get("banwords", {}))
+
 
 meta_data = MetaData(
-    name="Banwords",
+    name="违禁词",
     version="0.0.1",
     versionCode=1,
     description="A banwords plugin",
@@ -41,14 +47,14 @@ def basic_auth(username, password):
 class Api:
     @staticmethod
     def check(message: str):  # 可以在其他插件中通过 `pbf.pluginsManager.require("banwords").check()` 调用
-        data = requests.get(f"{banwords_server}/check/{message}", headers={ 'Authorization' : basic_auth(banwords_user, banwords_key)})
+        data = requests.get(f"{config.get('server')}/check/{message}", headers={ 'Authorization' : basic_auth(config.get("user"), config.get("key"))})
         try:
             return data.json()
         except Exception:
             return {}
 
 
-@Message(name="banwords message handler", enabled=banwords_enable_message_handler)
+@Message(name="banwords message handler", enabled=config.get("enable_message_handler", True))
 def messageHandler(event: Event):
     logger.info("Checking banwords inside the message...")
     if Api.check(event.raw_message).get("result"):
